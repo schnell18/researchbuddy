@@ -1,0 +1,19 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v4.2.1
+_src_path: https://github.com/jupyterlab/extension-template
+author_email: schnell18@gamil.com
+author_name: Justin Zhang
+data_format: string
+file_extension: ''
+has_binder: false
+has_settings: false
+kind: frontend
+labextension_name: ResearchBuddy
+mimetype: ''
+mimetype_name: ''
+project_short_description: An Intelligent Research Buddy
+python_name: researchbuddy
+repository: https://github.com/schnell18/researchbuddy
+test: true
+viewer_name: ''
+
