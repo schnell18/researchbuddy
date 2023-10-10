@@ -1,75 +1,107 @@
 import { ReactWidget } from '@jupyterlab/ui-components';
-import React from 'react';
-import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
-import 'react-tabs/style/react-tabs.css';
-
-//import React, { useState } from 'react';
-
-// const CounterComponent = (): JSX.Element => {
-//   const  = useState(0);
-//   return (
-//     <div>
-//       <p>You clicked {counter} times!</p>
-//       <button
-//         onClick={(): void => {
-//           setCounter(counter + 1);
-//         }}
-//       >
-//         Increment
-//       </button>
-//     </div>
-//   );
-// };
+import React, { useState, useEffect } from "react";
+import { Tab } from 'semantic-ui-react'
+import 'semantic-ui-css/semantic.min.css'
+import { requestAPI } from './handler';
 
 
-const rows = [
-    { title: "Lost in the Middle: How Language Models Use Long Contexts", pages: 10, author: "Liu et al." },
-    { title: "GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers", pages: 8, author: "Frantar et al." },
-    { title: "HuggingFace's Transformers: State-of-the-art Natural Language Processing", pages: 9, author: "Wolf et al." },
-    { title: "HuggingFace's Transformers: State-of-the-art Natural Language Processing", pages: 9, author: "Wolf et al." },
-    { title: "HuggingFace's Transformers: State-of-the-art Natural Language Processing", pages: 9, author: "Wolf et al." },
-    { title: "HuggingFace's Transformers: State-of-the-art Natural Language Processing", pages: 9, author: "Wolf et al." },
-    { title: "HuggingFace's Transformers: State-of-the-art Natural Language Processing", pages: 9, author: "Wolf et al." },
-    { title: "HuggingFace's Transformers: State-of-the-art Natural Language Processing", pages: 9, author: "Wolf et al." },
-]
- 
 const DocListComponent = (): JSX.Element => {
-    return (
-      <div className="App">
-        <table>
-            <tr>
-                <th></th>
-                <th>Title</th>
-                <th>Author</th>
-                <th>Pages</th>
+  const [docList, setDocList] = useState<any[]>([]);
+
+  useEffect(
+    () => {
+      requestAPI<any>('literature')
+        .then(data => {
+          setDocList(data.data.map((val: any) => {val.selected=false; return val; }))
+        })
+        .catch(reason => {
+          console.error(
+            `The jupyterlab_research_buddy server extension appears to be missing.\n${reason}`
+          );
+        });
+    },
+    []
+  );
+
+  const onSummarize = () => {
+    // TODO: make call to backend and display WIP status until server
+    // responds
+    const req = docList.filter(doc => doc.selected);
+    requestAPI<any>('literature/summary', {
+      method: 'POST',
+      body: JSON.stringify(req)
+    }).then(data => {
+        const latex = document.getElementById("latexoutput")
+        if (latex) {
+          latex.innerHTML = data.latex.join("")
+        }
+        const plaintext = document.getElementById("plaintextoutput")
+        if (plaintext) {
+          plaintext.innerHTML = data.plaintext.join("")
+        }
+      })
+      .catch(reason => {
+        console.error(
+          `The jupyterlab_research_buddy server extension appears to be missing.\n${reason}`
+        );
+      });
+  };
+
+  const onChanged = (i: any) => {
+    setDocList(
+      docList.map((doc, j) => {
+        if (i === j) {
+          doc.selected = !doc.selected
+        }
+        return doc;
+      })
+    )
+  };
+
+  return (
+    <div>
+      <h3>Select the literature to summarize</h3>
+      <table className="doclist">
+        <tr>
+          <th></th>
+          <th>Title</th>
+          <th>Author</th>
+          <th>Year</th>
+          <th>Pages</th>
+      </tr>
+        {docList.map((val, key) => {
+          return (
+            <tr key={key}>
+                <td><input
+                    type="checkbox"
+                    checked={val.selected}
+                    onChange={() => onChanged(key)}/>
+                </td>
+                <td className="text">{val.title}</td>
+                <td className="text">{val.author}</td>
+                <td className="numeric">{val.year}</td>
+                <td className="numeric">{val.pages}</td>
             </tr>
-            {rows.map((val, key) => {
-                return (
-                    <tr key={key}>
-                        <td><input type="checkbox"/></td>
-                        <td>{val.title}</td>
-                        <td>{val.author}</td>
-                        <td>{val.pages}</td>
-                    </tr>
-                )
-            })}
-        </table>
-        <button>Make Summarization</button>
-      </div>
-
-
-    );
+          )
+        })}
+      </table>
+      <button className="bottom-button" onClick={onSummarize} >
+        Make Summarization
+      </button>
+    </div>
+  );
 }
 
 const LatexoutputComponent = (): JSX.Element => {
     return (
       <div>
         <textarea
-          rows={10}
-          cols={72}
-          value={"LaTeX output here"}
+          id="latexoutput"
+          rows={25}
+          cols={120}
+          placeholder="LaTeX output here"
         />
-        <button>Open in Overleaf</button>
+        <button className="bottom-button">Open in Overleaf</button>
       </div>
     );
 }
@@ -78,34 +110,29 @@ const TextoutputComponent = (): JSX.Element => {
     return (
       <div>
         <textarea
-          rows={10}
-          cols={72}
-          value={"Plain text output here"}
+          id="plaintextoutput"
+          rows={25}
+          cols={120}
+          placeholder="Plaintext output here"
         />
       </div>
     );
 }
 
+const panes = [
+  { menuItem: 'Plaintext', render: () => <Tab.Pane><TextoutputComponent/></Tab.Pane> },
+  { menuItem: 'LaTeX', render: () => <Tab.Pane><LatexoutputComponent/></Tab.Pane> },
+]
+
 const OutputComponent = (): JSX.Element => {
     return (
-      <Tabs>
-        <TabList>
-          <Tab>plaintext</Tab>
-          <Tab>latex</Tab>
-        </TabList>
-        <TabPanel>
-          <TextoutputComponent/>
-        </TabPanel>
-        <TabPanel>
-          <LatexoutputComponent/>
-        </TabPanel>
-      </Tabs>
+     <Tab panes={panes} />
     );
 }
 
 const MyComponent = (): JSX.Element => {
     return (
-    <div>
+    <div className="App">
       <DocListComponent/>
       <OutputComponent/>
     </div>

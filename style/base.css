@@ -11,23 +11,37 @@
     display: block;
     justify-content: center;
     align-items: center;
-    font-size: 14px;
+    font-size: 18px;
+    margin-left: 10px;
 }
  
-table {
-    border: 2px solid forestgreen;
-    width: 800px;
-    height: 200px;
+.doclist {
+    border: 2px solid lightgray;
+    width: 98%;
+    height: 220px;
 }
  
 th {
-    border-bottom: 1px solid black;
+    border-bottom: 1px solid lightgray;
 }
  
-td {
+.text {
     text-align: left;
 }
 
+.numeric {
+    text-align: right;
+}
+
 .react-tabs__tab {
-    font-size: 14px;
+    font-size: 18px;
+}
+
+.bottom-button {
+    float: right;
+    margin-left: 0px;
+    margin-right: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    padding: 5px;
 }
