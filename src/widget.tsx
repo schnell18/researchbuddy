@@ -3,10 +3,19 @@ import React, { useState, useEffect } from "react";
 import { Tab } from 'semantic-ui-react'
 import 'semantic-ui-css/semantic.min.css'
 import { requestAPI } from './handler';
+import { Hourglass } from 'react-loader-spinner'
 
-
-const DocListComponent = (): JSX.Element => {
+const MyComponent = (): JSX.Element => {
   const [docList, setDocList] = useState<any[]>([]);
+  const [latexOutput, setLatexOutput] = useState<string>('');
+  const [plaintextOutput, setPlaintextOutput] = useState<string>('');
+  const [summarizeBtnEnabled, setSummarizeBtnEnabled] = useState<boolean>(false)
+  const [loading, setLoading] = useState<boolean>(false)
+
+  const panes: any[] = [
+    { menuItem: 'Plaintext', render: () => <Tab.Pane><TextoutputComponent lines={plaintextOutput} columns={120} rows={25} placeholder={""}/></Tab.Pane> },
+    { menuItem: 'LaTeX', render: () => <Tab.Pane><LatexoutputComponent lines={latexOutput}/></Tab.Pane> },
+  ]
 
   useEffect(
     () => {
@@ -26,24 +35,21 @@ const DocListComponent = (): JSX.Element => {
   const onSummarize = () => {
     // TODO: make call to backend and display WIP status until server
     // responds
+    setLoading(true);
     const req = docList.filter(doc => doc.selected);
     requestAPI<any>('literature/summary', {
       method: 'POST',
       body: JSON.stringify(req)
     }).then(data => {
-        const latex = document.getElementById("latexoutput")
-        if (latex) {
-          latex.innerHTML = data.latex.join("")
-        }
-        const plaintext = document.getElementById("plaintextoutput")
-        if (plaintext) {
-          plaintext.innerHTML = data.plaintext.join("")
-        }
+        setLatexOutput(data.latex.join(""))
+        setPlaintextOutput(data.plaintext.join(""))
+        setLoading(false);
       })
       .catch(reason => {
         console.error(
           `The jupyterlab_research_buddy server extension appears to be missing.\n${reason}`
         );
+        setLoading(false);
       });
   };
 
@@ -56,7 +62,38 @@ const DocListComponent = (): JSX.Element => {
         return doc;
       })
     )
+    setSummarizeBtnEnabled(docList.some((d) => d.selected === true));
   };
+
+  return (
+    <div className="App">
+      <DocListComponent docList={docList} summarizeBtnEnabled={summarizeBtnEnabled && !loading}  onSummarize={onSummarize} onChanged={onChanged}/>
+      <Hourglass
+        visible={loading}
+        height="80"
+        width="80"
+        ariaLabel="hourglass-loading"
+        colors={['#306cce', '#72a1ed']}
+      />
+      <OutputComponent panes={panes}/>
+    </div>
+  );
+
+  // return (
+  //   <div className="App">
+  //     <DocListComponent docList={docList} summarizeBtnEnabled={summarizeBtnEnabled && !loading}  onSummarize={onSummarize} onChanged={onChanged}/>
+  //     <OutputComponent panes={panes}/>
+  //   </div>
+  //   <div className="Loader">
+  //      <Dimmer active={true} inverted={true} size="massive">
+  //         <Loader inverted={true}>Working...</Loader>
+  //      </Dimmer>
+  //   </div>
+  // );
+
+}
+
+const DocListComponent = ({docList, summarizeBtnEnabled, onSummarize, onChanged}: {docList: any[], summarizeBtnEnabled: boolean, onSummarize: any, onChanged: any}): JSX.Element => {
 
   return (
     <div>
@@ -85,59 +122,37 @@ const DocListComponent = (): JSX.Element => {
           )
         })}
       </table>
-      <button className="bottom-button" onClick={onSummarize} >
+      <button className="bottom-button" disabled={!summarizeBtnEnabled} onClick={onSummarize} >
         Make Summarization
       </button>
     </div>
   );
 }
 
-const LatexoutputComponent = (): JSX.Element => {
+const LatexoutputComponent = ({lines}: {lines: string}): JSX.Element => {
     return (
       <div>
-        <textarea
-          id="latexoutput"
-          rows={25}
-          cols={120}
-          placeholder="LaTeX output here"
-        />
+        <TextoutputComponent lines={lines} rows={25} columns={120} placeholder={""}/>
         <button className="bottom-button">Open in Overleaf</button>
       </div>
     );
 }
 
-const TextoutputComponent = (): JSX.Element => {
+const TextoutputComponent = ({lines, rows=25, columns=120, placeholder="empty..."}: {lines: string, rows: number, columns: number, placeholder: string}): JSX.Element => {
     return (
       <div>
-        <textarea
-          id="plaintextoutput"
-          rows={25}
-          cols={120}
-          placeholder="Plaintext output here"
-        />
+        <textarea rows={rows} cols={columns} value={lines} placeholder={placeholder}/>
       </div>
     );
 }
 
-const panes = [
-  { menuItem: 'Plaintext', render: () => <Tab.Pane><TextoutputComponent/></Tab.Pane> },
-  { menuItem: 'LaTeX', render: () => <Tab.Pane><LatexoutputComponent/></Tab.Pane> },
-]
 
-const OutputComponent = (): JSX.Element => {
+const OutputComponent = ({panes}: {panes: any[]}): JSX.Element => {
     return (
      <Tab panes={panes} />
     );
 }
 
-const MyComponent = (): JSX.Element => {
-    return (
-    <div className="App">
-      <DocListComponent/>
-      <OutputComponent/>
-    </div>
-    );
-}
 /**
  * A Counter Lumino Widget that wraps a CounterComponent.
  */
