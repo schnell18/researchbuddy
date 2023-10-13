@@ -11,15 +11,8 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import { DataGrid, GridColDef, GridRowParams } from '@mui/x-data-grid';
-import { createMuiTheme, MuiThemeProvider } from "@material-ui/core/styles";
 
 import { requestAPI } from './handler';
-
-const theme = createMuiTheme({
-  typography: {
-    fontSize: 12
-  },
-});
 
 const MyComponent = (): JSX.Element => {
   const [docList, setDocList] = useState<any[]>([]);
@@ -169,24 +162,22 @@ const MyComponent = (): JSX.Element => {
   };
 
   return (
-    <MuiThemeProvider theme={theme}>
-      <div className="App">
-        <DocListComponent
-          docList={docList}
-          summarizeBtnEnabled={summarizeBtnEnabled && !loading}
-          onSummarize={onSummarize}
-          onDocChanged={onDocSelChanged}
-          libType={libType}
-          libTypes={libTypes}
-          onLibTypeChanged={onLibTypeChanged}
-          collection={collection}
-          collections={collections}
-          onCollectionChanged={onCollectionChanged}
-        />
-        <LoadingIndicator loading={loading} />
-        <OutputComponent panes={panes}/>
-      </div>
-    </MuiThemeProvider>
+    <div className="App">
+      <DocListComponent
+        docList={docList}
+        summarizeBtnEnabled={summarizeBtnEnabled && !loading}
+        onSummarize={onSummarize}
+        onDocChanged={onDocSelChanged}
+        libType={libType}
+        libTypes={libTypes}
+        onLibTypeChanged={onLibTypeChanged}
+        collection={collection}
+        collections={collections}
+        onCollectionChanged={onCollectionChanged}
+      />
+      <LoadingIndicator loading={loading} />
+      <OutputComponent panes={panes}/>
+    </div>
   );
 
 }
