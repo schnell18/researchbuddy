@@ -121,3 +121,8 @@ webcolors
 webencodings
 websocket-client
 zipp
+openai
+tiktoken
+langchain
+pypdf
+pymupdf

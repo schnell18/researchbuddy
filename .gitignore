@@ -124,3 +124,4 @@ dmypy.json
 # Yarn cache
 .yarn/
 .venv/
+credential.ini

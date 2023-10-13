@@ -4,6 +4,10 @@ import { Tab } from 'semantic-ui-react'
 import 'semantic-ui-css/semantic.min.css'
 import { requestAPI } from './handler';
 import { Hourglass } from 'react-loader-spinner'
+import { showErrorMessage } from '@jupyterlab/apputils'
+import Select from 'react-select'
+// import DropdownTreeSelect from 'react-dropdown-tree-select'
+// import 'react-dropdown-tree-select/dist/styles.css'
 
 const MyComponent = (): JSX.Element => {
   const [docList, setDocList] = useState<any[]>([]);
@@ -11,21 +15,40 @@ const MyComponent = (): JSX.Element => {
   const [plaintextOutput, setPlaintextOutput] = useState<string>('');
   const [summarizeBtnEnabled, setSummarizeBtnEnabled] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(false)
+  const [libType, setLibType] = useState<any>({})
+  const [libTypes, setLibTypes] = useState<any[]>([])
+  const [collection, setCollection] = useState<any>({})
+  const [collections, setCollections] = useState<any[]>([])
 
   const panes: any[] = [
     { menuItem: 'Plaintext', render: () => <Tab.Pane><TextoutputComponent lines={plaintextOutput} columns={120} rows={25} placeholder={""}/></Tab.Pane> },
     { menuItem: 'LaTeX', render: () => <Tab.Pane><LatexoutputComponent lines={latexOutput}/></Tab.Pane> },
   ]
 
+  function trimFit(text: string) {
+    const leng = 85;
+    if (text.length > leng) {
+      return `${text.substring(0, leng-2)}...`;
+    }
+    return text;
+  }
+
   useEffect(
     () => {
-      requestAPI<any>('literature')
+      requestAPI<any>('libtype')
         .then(data => {
-          setDocList(data.data.map((val: any) => {val.selected=false; return val; }))
+          setLibTypes(data.data)
+          let preferred = data.data.filter((d: any) => {d?.preferred === true})
+          if (preferred && preferred.length > 0) {
+            setLibType(preferred[0])
+          }
+          else {
+            setLibType(data.data[0])
+          }
         })
         .catch(reason => {
           console.error(
-            `The jupyterlab_research_buddy server extension appears to be missing.\n${reason}`
+            `Serverside error failure: ${reason}`
           );
         });
     },
@@ -33,25 +56,95 @@ const MyComponent = (): JSX.Element => {
   );
 
   const onSummarize = () => {
-    // TODO: make call to backend and display WIP status until server
-    // responds
     setLoading(true);
-    const req = docList.filter(doc => doc.selected);
+    const req = {
+      libType: libType.value,
+      docList: docList.filter(doc => doc.selected).map(doc => ({id: doc.id}))
+    }
     requestAPI<any>('literature/summary', {
       method: 'POST',
       body: JSON.stringify(req)
     }).then(data => {
-        setLatexOutput(data.latex.join(""))
-        setPlaintextOutput(data.plaintext.join(""))
         setLoading(false);
+        if (data.code == 0) {
+          setLatexOutput(data.latex.join(""))
+          setPlaintextOutput(data.plaintext.join(""))
+        }
+        else {
+          showErrorMessage("Failure", data.errMsg)
+        }
       })
       .catch(reason => {
         console.error(
-          `The jupyterlab_research_buddy server extension appears to be missing.\n${reason}`
+          `Serverside error failure: ${reason}`
         );
         setLoading(false);
+        showErrorMessage("Failure", reason)
       });
   };
+
+  const onLibTypeChanged = (val: any) => {
+    setLibType(val);
+    if (libType.value === 'zotero') {
+      requestAPI<any>('libtype/zotero')
+        .then(data => {
+          console.log(data.data)
+          setCollections(data.data)
+          if (data.data.length > 0) {
+            setCollection(data.data[0])
+          }
+        })
+        .catch(reason => {
+          console.error(
+            `Serverside error failure: ${reason}`
+          );
+        });
+    }
+    else if (libType.value === 'directory') {
+      requestAPI<any>('libtype/directory')
+        .then(data => {
+          setCollections(data.data)
+          if (data.data.length > 0) {
+            setCollection(data.data[0])
+          }
+        })
+        .catch(reason => {
+          console.error(
+            `Serverside error failure: ${reason}`
+          );
+        });
+    }
+  };
+
+  const onCollectionChanged = (val: any) => {
+    setCollection(val);
+    requestAPI<any>(`literature?libType=${libType.value}&collection=${val.value}`)
+      .then(data => {
+        setDocList(data.data.map((val: any) => ({
+            ...val, selected: false, title: trimFit(val.title)
+        })))
+      })
+      .catch(reason => {
+        console.error(
+          `Serverside error failure: ${reason}`
+        );
+      });
+  }
+
+  // const onCollectionChanged = (currentNode: any, selectedNodes: any[]) => {
+  //   requestAPI<any>(`literature?libType=${libType.value}&collection=${selectedNodes[0].value}`)
+  //     .then(data => {
+  //       setDocList(data.data.map((val: any) => ({
+  //           ...val, selected: false, title: trimFit(val.title)
+  //       })))
+  //     })
+  //     .catch(reason => {
+  //       console.error(
+  //         `Serverside error failure: ${reason}`
+  //       );
+  //     });
+  // }
+  //
 
   const onChanged = (i: any) => {
     setDocList(
@@ -65,39 +158,111 @@ const MyComponent = (): JSX.Element => {
     setSummarizeBtnEnabled(docList.some((d) => d.selected === true));
   };
 
+
+  // const data = {
+  //   label: 'search me',
+  //   value: 'searchme',
+  //   children: [
+  //     {
+  //       label: 'search me too',
+  //       value: 'searchmetoo',
+  //       children: [
+  //         {
+  //           label: 'No one can get me',
+  //           value: 'anonymous',
+  //         },
+  //       ],
+  //     },
+  //   ],
+  // }
+  //
+  //
+
   return (
     <div className="App">
-      <DocListComponent docList={docList} summarizeBtnEnabled={summarizeBtnEnabled && !loading}  onSummarize={onSummarize} onChanged={onChanged}/>
-      <Hourglass
-        visible={loading}
-        height="80"
-        width="80"
-        ariaLabel="hourglass-loading"
-        colors={['#306cce', '#72a1ed']}
+      <DocListComponent
+        docList={docList}
+        summarizeBtnEnabled={summarizeBtnEnabled && !loading}
+        onSummarize={onSummarize}
+        onDocChanged={onChanged}
+        libTypes={libTypes}
+        libType={libType}
+        onLibTypeChanged={onLibTypeChanged}
+        collection={collection}
+        collections={collections}
+        onCollectionChanged={onCollectionChanged}
       />
+      <LoadingIndicator loading={loading} />
       <OutputComponent panes={panes}/>
     </div>
   );
 
-  // return (
-  //   <div className="App">
-  //     <DocListComponent docList={docList} summarizeBtnEnabled={summarizeBtnEnabled && !loading}  onSummarize={onSummarize} onChanged={onChanged}/>
-  //     <OutputComponent panes={panes}/>
-  //   </div>
-  //   <div className="Loader">
-  //      <Dimmer active={true} inverted={true} size="massive">
-  //         <Loader inverted={true}>Working...</Loader>
-  //      </Dimmer>
-  //   </div>
-  // );
-
 }
 
-const DocListComponent = ({docList, summarizeBtnEnabled, onSummarize, onChanged}: {docList: any[], summarizeBtnEnabled: boolean, onSummarize: any, onChanged: any}): JSX.Element => {
+const LoadingIndicator = ({ loading }: { loading: boolean }): JSX.Element => {
+  if (loading) {
+    return (
+      <div className="center">
+        <Hourglass
+          visible={loading}
+          height="80"
+          width="80"
+          ariaLabel="hourglass-loading"
+          colors={['#306cce', '#72a1ed']}
+        />
+      </div>
+    )
+  }
+  return (
+    <div></div>
+  )
+}
 
+const DocListComponent = (
+  {
+    docList,
+    summarizeBtnEnabled,
+    onSummarize,
+    onDocChanged,
+    libTypes,
+    libType,
+    onLibTypeChanged,
+    collection,
+    collections,
+    onCollectionChanged
+  }:
+  {
+    docList: any[],
+    summarizeBtnEnabled: boolean,
+    onSummarize: any,
+    onDocChanged: any,
+    libTypes: any[],
+    libType: any,
+    onLibTypeChanged: any,
+    collection: any,
+    collections: any[],
+    onCollectionChanged: any,
+  }
+): JSX.Element => {
+
+        //onChange={onCollectionChanged}
+      // <DropdownTreeSelect
+      //   data={collectons}
+      //   mode={'radioSelect'}
+      // />
   return (
     <div>
       <h3>Select the literature to summarize</h3>
+      <Select
+        options={libTypes}
+        value={libType}
+        onChange={onLibTypeChanged}
+      />
+      <Select
+        options={collections}
+        value={collection}
+        onChange={onCollectionChanged}
+      />
       <table className="doclist">
         <tr>
           <th></th>
@@ -112,7 +277,7 @@ const DocListComponent = ({docList, summarizeBtnEnabled, onSummarize, onChanged}
                 <td><input
                     type="checkbox"
                     checked={val.selected}
-                    onChange={() => onChanged(key)}/>
+                    onChange={() => onDocChanged(key)}/>
                 </td>
                 <td className="text">{val.title}</td>
                 <td className="text">{val.author}</td>

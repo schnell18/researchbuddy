@@ -6,7 +6,7 @@
 
 
 .App {
-    width: 100%;
+    width: 80%;
     height: 100%;
     display: block;
     justify-content: center;
@@ -44,4 +44,16 @@ th {
     margin-top: 10px;
     margin-bottom: 10px;
     padding: 5px;
+}
+
+
+.center {
+  margin: auto;
+  width: 30%;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border: 0px;
+  padding: 10px;
+  z-index: 9999;
 }
