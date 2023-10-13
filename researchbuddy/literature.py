@@ -18,7 +18,7 @@ class LiteratureHandler(APIHandler):
         rows = []
         if (lib_type == 'zotero'):
             rows = zo_load_literatures(collection)
-        elif (lib_type == 'directory'):
+        elif (lib_type == 'folder'):
             #TODO: fix hard-code diretory location
             rows = dir_load_literatures("pdfs")
             self.log.info("Loaded: %s", rows)
@@ -33,7 +33,7 @@ class LiteratureHandler(APIHandler):
 class LibraryTypeHandler(APIHandler):
     @tornado.web.authenticated
     def get(self):
-        options = [{'value': 'directory', 'label': 'Directory'}]
+        options = [{'value': 'folder', 'label': 'Folder'}]
         # check if zotero is installed or configed
         if validate_zotero():
             options.append({'value': 'zotero', 'label': 'Zotero'})
@@ -45,7 +45,7 @@ class LibraryTypeHandler(APIHandler):
         )
 
 
-class DirectoryLibraryHandler(APIHandler):
+class FolderLibraryHandler(APIHandler):
     @tornado.web.authenticated
     def get(self):
         options = [{'value': 'default', 'label': 'Default Folder'}]

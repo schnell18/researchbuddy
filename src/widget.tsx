@@ -41,9 +41,11 @@ const MyComponent = (): JSX.Element => {
           let preferred = data.data.filter((d: any) => {d?.preferred === true})
           if (preferred && preferred.length > 0) {
             setLibType(preferred[0])
+            loadCollections(preferred[0].value);
           }
           else {
             setLibType(data.data[0])
+            loadCollections(data.data[0].value);
           }
         })
         .catch(reason => {
@@ -83,15 +85,15 @@ const MyComponent = (): JSX.Element => {
       });
   };
 
-  const onLibTypeChanged = (val: any) => {
-    setLibType(val);
-    if (libType.value === 'zotero') {
+  function loadCollections(libType: string) {
+    if (libType === 'zotero') {
       requestAPI<any>('libtype/zotero')
         .then(data => {
-          console.log(data.data)
-          setCollections(data.data)
+          console.log(data.data);
+          setCollections(data.data);
           if (data.data.length > 0) {
-            setCollection(data.data[0])
+            setCollection(data.data[0]);
+            loadLiteratures(libType, data.data[0].value);
           }
         })
         .catch(reason => {
@@ -100,12 +102,13 @@ const MyComponent = (): JSX.Element => {
           );
         });
     }
-    else if (libType.value === 'directory') {
-      requestAPI<any>('libtype/directory')
+    else if (libType === 'folder') {
+      requestAPI<any>('libtype/folder')
         .then(data => {
           setCollections(data.data)
           if (data.data.length > 0) {
             setCollection(data.data[0])
+            loadLiteratures(libType, data.data[0].value);
           }
         })
         .catch(reason => {
@@ -114,11 +117,16 @@ const MyComponent = (): JSX.Element => {
           );
         });
     }
+  }
+
+  const onLibTypeChanged = (val: any) => {
+    console.log(val)
+    setLibType(val);
+    loadCollections(val.value)
   };
 
-  const onCollectionChanged = (val: any) => {
-    setCollection(val);
-    requestAPI<any>(`literature?libType=${libType.value}&collection=${val.value}`)
+  function loadLiteratures(libType: string, collection: string) {
+    requestAPI<any>(`literature?libType=${libType}&collection=${collection}`)
       .then(data => {
         setDocList(data.data.map((val: any) => ({
             ...val, selected: false, title: trimFit(val.title)
@@ -129,6 +137,11 @@ const MyComponent = (): JSX.Element => {
           `Serverside error failure: ${reason}`
         );
       });
+  }
+
+  const onCollectionChanged = (val: any) => {
+    setCollection(val);
+    loadLiteratures(libType.value, val.value);
   }
 
   // const onCollectionChanged = (currentNode: any, selectedNodes: any[]) => {
@@ -245,24 +258,28 @@ const DocListComponent = (
   }
 ): JSX.Element => {
 
-        //onChange={onCollectionChanged}
-      // <DropdownTreeSelect
-      //   data={collectons}
-      //   mode={'radioSelect'}
-      // />
   return (
     <div>
-      <h3>Select the literature to summarize</h3>
-      <Select
-        options={libTypes}
-        value={libType}
-        onChange={onLibTypeChanged}
-      />
-      <Select
-        options={collections}
-        value={collection}
-        onChange={onCollectionChanged}
-      />
+      <div>
+        <div className="float-child">
+          <label>Collection:</label>
+        <Select
+          options={collections}
+          value={collection}
+          onChange={onCollectionChanged}
+        />
+        </div>
+        <div className="float-child">
+        <span>
+          <label>Corpus:</label>
+          <Select
+            options={libTypes}
+            value={libType}
+            onChange={onLibTypeChanged}
+          />
+        </span>
+        </div>
+      </div>
       <table className="doclist">
         <tr>
           <th></th>

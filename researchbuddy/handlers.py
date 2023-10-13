@@ -5,7 +5,7 @@ from jupyter_server.utils import url_path_join
 from .literature import LiteratureHandler
 from .literature import LibraryTypeHandler
 from .literature import ZoteroLibraryHandler
-from .literature import DirectoryLibraryHandler
+from .literature import FolderLibraryHandler
 from .summary import SummeryHandler
 
 def setup_handlers(web_app):
@@ -14,7 +14,7 @@ def setup_handlers(web_app):
         'literature/summary': SummeryHandler,
         'libtype': LibraryTypeHandler,
         'libtype/zotero': ZoteroLibraryHandler,
-        'libtype/directory': DirectoryLibraryHandler,
+        'libtype/folder': FolderLibraryHandler,
     }
     host_pattern = ".*$"
     path_prefix =  "researchbuddy"

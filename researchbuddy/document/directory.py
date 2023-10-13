@@ -47,12 +47,19 @@ def load_one_pdf(pdf_path):
                     author = f"{comps[1]} et al."
                 else:
                     author = f"{comps[0]} et al."
+        year = 0
+        if reader.metadata and reader.metadata.creation_date_raw:
+            # trap data parsing error
+            try:
+                year = reader.metadata.creation_date.year
+            except Exception as ex:
+                pass
 
         return (
             page.extract_text().split("\n", 1)[0],
             len(reader.pages),
             author,
-            reader.metadata.creation_date.year if reader.metadata.creation_date else 0
+            year
         )
     else:
         return "", 0, "", 0
