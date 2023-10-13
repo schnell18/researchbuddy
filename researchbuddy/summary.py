@@ -16,7 +16,16 @@ class SummeryHandler(APIHandler):
     def post(self):
         req = self.get_json_body()
         self.log.warning("Received Summary Request: %s", req)
-        lib_type = req.get('libType', 'directory')
+        lib_type = req.get('libType', 'folder')
+        collection = req.get('collection', '')
+        if collection == '':
+            self.log.error("collection is absent")
+            resp = {
+                "code": 501, 
+                "errMsg": "collection parameter is absent"
+            }
+            self.finish(json.dumps(resp))
+            return
 
         try:
             #TODO: refine multi-doc structure
@@ -25,10 +34,10 @@ class SummeryHandler(APIHandler):
                 if (lib_type == 'zotero'):
                     pdf_path = zo_find_document_by_id(doc['id'])
                     summaries.append(summarize(pdf_path))
-                elif (lib_type == 'directory'):
+                elif (lib_type == 'folder'):
                     #TODO: fix hard-code diretory location
-                    pdf_path = dir_find_document_by_id("pdfs", doc['id'])
-                    self.log.warning("Found pdf location: %s", pdf_path)
+                    pdf_path = dir_find_document_by_id(collection, doc['id'])
+                    self.log.info("Found pdf location: %s", pdf_path)
                     summaries.append(summarize(pdf_path))
 
             resp = {

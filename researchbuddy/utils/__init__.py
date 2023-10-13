@@ -1,12 +1,12 @@
 """Utitlities functions."""
 
 from .common import (
-    load_access_token,
+    load_config_item,
     eprint,
 )
 
 __all__ = [
-    "load_access_token",
+    "load_config_item",
     "eprint",
 ]
 

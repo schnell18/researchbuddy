@@ -19,12 +19,13 @@ def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-def load_access_token(section, key):
-    """Load the github API access token from config file.
+def load_config_item(section, key, default=None):
+    """Load the config item from config file.
 
     Parameters
     ----------
-    None
+    section: str
+
 
     Returns
     -------
@@ -32,6 +33,9 @@ def load_access_token(section, key):
         the github access token
     """
     parser = configparser.ConfigParser()
-    parser.read('credential.ini')
-    section = parser[section]
-    return section[key]
+    parser.read('settings.ini')
+    if section in parser:
+        section = parser[section]
+        return section.get(key, default)
+    else:
+        return default

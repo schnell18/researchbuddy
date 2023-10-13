@@ -2,6 +2,7 @@ import json
 import tornado
 
 from .document.directory import load_literatures as dir_load_literatures
+from .document.directory import load_collections as dir_load_collections
 from .document.zotero import load_literatures as zo_load_literatures
 from .document.zotero import load_collections as zo_load_collections
 from .document.zotero import validate_zotero
@@ -19,8 +20,7 @@ class LiteratureHandler(APIHandler):
         if (lib_type == 'zotero'):
             rows = zo_load_literatures(collection)
         elif (lib_type == 'folder'):
-            #TODO: fix hard-code diretory location
-            rows = dir_load_literatures("pdfs")
+            rows = dir_load_literatures(collection)
             self.log.info("Loaded: %s", rows)
 
         self.finish(
@@ -48,7 +48,7 @@ class LibraryTypeHandler(APIHandler):
 class FolderLibraryHandler(APIHandler):
     @tornado.web.authenticated
     def get(self):
-        options = [{'value': 'default', 'label': 'Default Folder'}]
+        options = [{'value': t, 'label': t} for t in dir_load_collections()]
         self.finish(
             json.dumps({
                 "data": options

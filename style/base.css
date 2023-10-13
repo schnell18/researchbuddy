@@ -12,7 +12,8 @@
     justify-content: center;
     align-items: center;
     font-size: 14pt;
-    margin-left: 10px;
+    margin: auto;
+    margin-top: 15px;
 }
  
 .doclist {
@@ -39,6 +40,11 @@ th {
     font-size: 14pt;
 }
 
+.MuiStack-root {
+    margin-right: 5px;
+    margin-top: 5px;
+}
+
 .bottom-button {
     float: right;
     margin-left: 0px;
@@ -54,14 +60,14 @@ th {
   width: 30%;
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: 40%;
   border: 0px;
   padding: 10px;
   z-index: 9999;
 }
 
 .float-child {
-  width: 15%;
+  width: 20%;
   float: right;
   font-size: 12pt;
   margin-bottom: 5px;

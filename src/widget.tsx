@@ -2,36 +2,48 @@ import { ReactWidget } from '@jupyterlab/ui-components';
 import React, { useState, useEffect } from "react";
 import { Tab } from 'semantic-ui-react'
 import 'semantic-ui-css/semantic.min.css'
-import { requestAPI } from './handler';
 import { Hourglass } from 'react-loader-spinner'
 import { showErrorMessage } from '@jupyterlab/apputils'
-import Select from 'react-select'
-// import DropdownTreeSelect from 'react-dropdown-tree-select'
-// import 'react-dropdown-tree-select/dist/styles.css'
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import Select, { SelectChangeEvent } from '@mui/material/Select';
+import { DataGrid, GridColDef, GridRowParams } from '@mui/x-data-grid';
+import { createMuiTheme, MuiThemeProvider } from "@material-ui/core/styles";
+
+import { requestAPI } from './handler';
+
+const theme = createMuiTheme({
+  typography: {
+    fontSize: 12
+  },
+});
 
 const MyComponent = (): JSX.Element => {
   const [docList, setDocList] = useState<any[]>([]);
-  const [latexOutput, setLatexOutput] = useState<string>('');
+  // const [latexOutput, setLatexOutput] = useState<string>('');
   const [plaintextOutput, setPlaintextOutput] = useState<string>('');
   const [summarizeBtnEnabled, setSummarizeBtnEnabled] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(false)
-  const [libType, setLibType] = useState<any>({})
+  const [libType, setLibType] = useState<string>('')
   const [libTypes, setLibTypes] = useState<any[]>([])
-  const [collection, setCollection] = useState<any>({})
+  const [collection, setCollection] = useState<string>('')
   const [collections, setCollections] = useState<any[]>([])
 
   const panes: any[] = [
-    { menuItem: 'Plaintext', render: () => <Tab.Pane><TextoutputComponent lines={plaintextOutput} columns={120} rows={25} placeholder={""}/></Tab.Pane> },
-    { menuItem: 'LaTeX', render: () => <Tab.Pane><LatexoutputComponent lines={latexOutput}/></Tab.Pane> },
+    { menuItem: 'Result', render: () => <Tab.Pane><TextoutputComponent lines={plaintextOutput} columns={120} rows={20} placeholder={""}/></Tab.Pane> },
+    //{ menuItem: 'LaTeX', render: () => <Tab.Pane><LatexoutputComponent lines={latexOutput}/></Tab.Pane> },
   ]
 
-  function trimFit(text: string) {
-    const leng = 85;
-    if (text.length > leng) {
-      return `${text.substring(0, leng-2)}...`;
-    }
-    return text;
-  }
+  // function trimFit(text: string) {
+  //   const leng = 85;
+  //   if (text.length > leng) {
+  //     return `${text.substring(0, leng-2)}...`;
+  //   }
+  //   return text;
+  // }
 
   useEffect(
     () => {
@@ -40,11 +52,11 @@ const MyComponent = (): JSX.Element => {
           setLibTypes(data.data)
           let preferred = data.data.filter((d: any) => {d?.preferred === true})
           if (preferred && preferred.length > 0) {
-            setLibType(preferred[0])
+            setLibType(preferred[0].value)
             loadCollections(preferred[0].value);
           }
           else {
-            setLibType(data.data[0])
+            setLibType(data.data[0].value)
             loadCollections(data.data[0].value);
           }
         })
@@ -60,7 +72,8 @@ const MyComponent = (): JSX.Element => {
   const onSummarize = () => {
     setLoading(true);
     const req = {
-      libType: libType.value,
+      libType: libType,
+      collection: collection,
       docList: docList.filter(doc => doc.selected).map(doc => ({id: doc.id}))
     }
     requestAPI<any>('literature/summary', {
@@ -69,7 +82,7 @@ const MyComponent = (): JSX.Element => {
     }).then(data => {
         setLoading(false);
         if (data.code == 0) {
-          setLatexOutput(data.latex.join(""))
+          //setLatexOutput(data.latex.join(""))
           setPlaintextOutput(data.plaintext.join(""))
         }
         else {
@@ -89,10 +102,9 @@ const MyComponent = (): JSX.Element => {
     if (libType === 'zotero') {
       requestAPI<any>('libtype/zotero')
         .then(data => {
-          console.log(data.data);
           setCollections(data.data);
           if (data.data.length > 0) {
-            setCollection(data.data[0]);
+            setCollection(data.data[0].value);
             loadLiteratures(libType, data.data[0].value);
           }
         })
@@ -107,7 +119,7 @@ const MyComponent = (): JSX.Element => {
         .then(data => {
           setCollections(data.data)
           if (data.data.length > 0) {
-            setCollection(data.data[0])
+            setCollection(data.data[0].value)
             loadLiteratures(libType, data.data[0].value);
           }
         })
@@ -119,17 +131,22 @@ const MyComponent = (): JSX.Element => {
     }
   }
 
-  const onLibTypeChanged = (val: any) => {
-    console.log(val)
-    setLibType(val);
-    loadCollections(val.value)
+  const onLibTypeChanged = (event: SelectChangeEvent) => {
+    setLibType(event.target.value);
+    loadCollections(event.target.value)
   };
+
+
+  const onCollectionChanged = (event: SelectChangeEvent) => {
+    setCollection(event.target.value);
+    loadLiteratures(libType, event.target.value);
+  }
 
   function loadLiteratures(libType: string, collection: string) {
     requestAPI<any>(`literature?libType=${libType}&collection=${collection}`)
       .then(data => {
         setDocList(data.data.map((val: any) => ({
-            ...val, selected: false, title: trimFit(val.title)
+            ...val, selected: false, title: val.title
         })))
       })
       .catch(reason => {
@@ -139,30 +156,10 @@ const MyComponent = (): JSX.Element => {
       });
   }
 
-  const onCollectionChanged = (val: any) => {
-    setCollection(val);
-    loadLiteratures(libType.value, val.value);
-  }
-
-  // const onCollectionChanged = (currentNode: any, selectedNodes: any[]) => {
-  //   requestAPI<any>(`literature?libType=${libType.value}&collection=${selectedNodes[0].value}`)
-  //     .then(data => {
-  //       setDocList(data.data.map((val: any) => ({
-  //           ...val, selected: false, title: trimFit(val.title)
-  //       })))
-  //     })
-  //     .catch(reason => {
-  //       console.error(
-  //         `Serverside error failure: ${reason}`
-  //       );
-  //     });
-  // }
-  //
-
-  const onChanged = (i: any) => {
+  const onDocSelChanged = (params: GridRowParams, event: any, details: any) => {
     setDocList(
       docList.map((doc, j) => {
-        if (i === j) {
+        if (params.id === doc.id) {
           doc.selected = !doc.selected
         }
         return doc;
@@ -171,43 +168,25 @@ const MyComponent = (): JSX.Element => {
     setSummarizeBtnEnabled(docList.some((d) => d.selected === true));
   };
 
-
-  // const data = {
-  //   label: 'search me',
-  //   value: 'searchme',
-  //   children: [
-  //     {
-  //       label: 'search me too',
-  //       value: 'searchmetoo',
-  //       children: [
-  //         {
-  //           label: 'No one can get me',
-  //           value: 'anonymous',
-  //         },
-  //       ],
-  //     },
-  //   ],
-  // }
-  //
-  //
-
   return (
-    <div className="App">
-      <DocListComponent
-        docList={docList}
-        summarizeBtnEnabled={summarizeBtnEnabled && !loading}
-        onSummarize={onSummarize}
-        onDocChanged={onChanged}
-        libTypes={libTypes}
-        libType={libType}
-        onLibTypeChanged={onLibTypeChanged}
-        collection={collection}
-        collections={collections}
-        onCollectionChanged={onCollectionChanged}
-      />
-      <LoadingIndicator loading={loading} />
-      <OutputComponent panes={panes}/>
-    </div>
+    <MuiThemeProvider theme={theme}>
+      <div className="App">
+        <DocListComponent
+          docList={docList}
+          summarizeBtnEnabled={summarizeBtnEnabled && !loading}
+          onSummarize={onSummarize}
+          onDocChanged={onDocSelChanged}
+          libType={libType}
+          libTypes={libTypes}
+          onLibTypeChanged={onLibTypeChanged}
+          collection={collection}
+          collections={collections}
+          onCollectionChanged={onCollectionChanged}
+        />
+        <LoadingIndicator loading={loading} />
+        <OutputComponent panes={panes}/>
+      </div>
+    </MuiThemeProvider>
   );
 
 }
@@ -237,8 +216,8 @@ const DocListComponent = (
     summarizeBtnEnabled,
     onSummarize,
     onDocChanged,
-    libTypes,
     libType,
+    libTypes,
     onLibTypeChanged,
     collection,
     collections,
@@ -249,8 +228,8 @@ const DocListComponent = (
     summarizeBtnEnabled: boolean,
     onSummarize: any,
     onDocChanged: any,
-    libTypes: any[],
     libType: any,
+    libTypes: any[],
     onLibTypeChanged: any,
     collection: any,
     collections: any[],
@@ -258,76 +237,123 @@ const DocListComponent = (
   }
 ): JSX.Element => {
 
+  const columns: GridColDef[] = [
+    {
+      field: 'title',
+      headerName: 'Title',
+      description: 'Title of the literature',
+      flex: 60,
+    },
+    { field: 'author', headerName: 'Author', flex: 20 },
+    { field: 'year', headerName: 'Year', type: 'number', flex: 10 },
+    { field: 'pages', headerName: 'Pages', type: 'number', flex: 10 },
+  ];
+
   return (
     <div>
-      <div>
-        <div className="float-child">
-          <label>Collection:</label>
-        <Select
-          options={collections}
-          value={collection}
-          onChange={onCollectionChanged}
-        />
-        </div>
-        <div className="float-child">
-        <span>
-          <label>Corpus:</label>
+      <Stack
+        direction="row"
+        justifyContent="flex-end"
+        alignItems="flex-end"
+        spacing={2}
+      >
+
+        <FormControl sx={{ m: 1, minWidth: 120 }} size="small">
+          <InputLabel id="corpus-select-label">Corpus</InputLabel>
           <Select
-            options={libTypes}
+            id="corpus-select"
+            labelId="corpus-select-label"
             value={libType}
+            label="Corpus"
             onChange={onLibTypeChanged}
-          />
-        </span>
-        </div>
+          >
+          {libTypes.map((val, key) => {
+            return (
+              <MenuItem value={val.value}>{val.label}</MenuItem>
+            )
+          })}
+          </Select>
+        </FormControl>
+
+        <FormControl sx={{ m: 1, minWidth: 120 }} size="small">
+          <InputLabel id="collection-select-label">Collection</InputLabel>
+          <Select
+            id="collection-select"
+            labelId="collection-select-label"
+            value={collection}
+            label="Collection"
+            onChange={onCollectionChanged}
+          >
+          {collections.map((val, key) => {
+            return (
+              <MenuItem value={val.value}>{val.label}</MenuItem>
+            )
+          })}
+          </Select>
+        </FormControl>
+
+      </Stack>
+
+      <div style={{ height: 300, width: '100%' }}>
+        <DataGrid
+          rows={docList}
+          columns={columns}
+          density={'compact'}
+          onCellClick={onDocChanged}
+          initialState={{
+            pagination: {
+              paginationModel: { page: 0, pageSize: 6 },
+            },
+          }}
+          sx={{fontSize: 14}}
+          pageSizeOptions={[6, 12]}
+          checkboxSelection
+        />
       </div>
-      <table className="doclist">
-        <tr>
-          <th></th>
-          <th>Title</th>
-          <th>Author</th>
-          <th>Year</th>
-          <th>Pages</th>
-      </tr>
-        {docList.map((val, key) => {
-          return (
-            <tr key={key}>
-                <td><input
-                    type="checkbox"
-                    checked={val.selected}
-                    onChange={() => onDocChanged(key)}/>
-                </td>
-                <td className="text">{val.title}</td>
-                <td className="text">{val.author}</td>
-                <td className="numeric">{val.year}</td>
-                <td className="numeric">{val.pages}</td>
-            </tr>
-          )
-        })}
-      </table>
-      <button className="bottom-button" disabled={!summarizeBtnEnabled} onClick={onSummarize} >
-        Make Summarization
-      </button>
+
+      <Stack
+        direction="row"
+        justifyContent="flex-end"
+        alignItems="flex-end"
+        spacing={2}
+      >
+      <Button variant="contained" disabled={!summarizeBtnEnabled} onClick={onSummarize}>Summarize</Button>
+      </Stack>
+        
     </div>
   );
+
 }
 
-const LatexoutputComponent = ({lines}: {lines: string}): JSX.Element => {
+// const LatexoutputComponent = ({lines}: {lines: string}): JSX.Element => {
+//     return (
+//       <div>
+//         <TextoutputComponent lines={lines} rows={20} columns={120} placeholder={""}/>
+//         <button className="bottom-button">Open in Overleaf</button>
+//       </div>
+//     );
+// }
+
+const TextoutputComponent = (
+  {
+    lines, rows=25, columns=120, placeholder="empty..."
+  }:
+  {
+    lines: string,
+    rows: number,
+    columns: number,
+    placeholder: string
+  }): JSX.Element => {
     return (
       <div>
-        <TextoutputComponent lines={lines} rows={25} columns={120} placeholder={""}/>
-        <button className="bottom-button">Open in Overleaf</button>
+        <textarea
+          rows={rows}
+          cols={columns}
+          value={lines}
+          placeholder={placeholder}/>
       </div>
     );
 }
-
-const TextoutputComponent = ({lines, rows=25, columns=120, placeholder="empty..."}: {lines: string, rows: number, columns: number, placeholder: string}): JSX.Element => {
-    return (
-      <div>
-        <textarea rows={rows} cols={columns} value={lines} placeholder={placeholder}/>
-      </div>
-    );
-}
-
 
 const OutputComponent = ({panes}: {panes: any[]}): JSX.Element => {
     return (

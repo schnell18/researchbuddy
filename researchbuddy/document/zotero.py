@@ -95,7 +95,7 @@ with collection_item_agg as (
            count(*)      as cnt
       from collectionItems
      group by collectionID
-     order by cnt
+     order by cnt desc
 )
 select c.collectionID   as id,
        c.collectionName as name
@@ -124,8 +124,13 @@ def load_literatures(collection):
     try:
         conn = _get_connection()
         cur = conn.cursor()
+        seen = {}
         dikt = []
         for key, _, title, year, store_path, _, author_last in cur.execute(__sql1, (collection,)):
+            val = seen.get(key)
+            if val is not None:
+                continue
+            seen[key] = 1
             pdf_path = os.path.join(
                 ZOTERO_HOME, 'storage', key, store_path
             )

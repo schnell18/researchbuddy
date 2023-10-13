@@ -1,11 +1,18 @@
+import os
+import os.path
+
 from hashlib import md5
 from pathlib import Path
 from pypdf import PdfReader
 
+from ..utils import load_config_item
 
-def load_literatures(dir):
+DEFAULT_LITERATURE_ROOT = './LITERATURES'
+
+
+def load_literatures(collection):
     dikt = []
-    for entry in _load_doc_file_info(dir):
+    for entry in _load_doc_file_info(collection):
         title, pages, author, year = load_one_pdf(entry['path'])
         dikt.append({
             'id': entry['id'],
@@ -17,14 +24,36 @@ def load_literatures(dir):
     return dikt
 
 
-def find_document_by_id(dir, id):
-    for info in _load_doc_file_info(dir):
+def find_document_by_id(collection, id):
+    for info in _load_doc_file_info(collection):
         if info['id'] == id:
             return info['path']
     return None
 
+
+def load_collections():
+    folder_root = load_config_item(
+        "general",
+        "literature_root_dir",
+        DEFAULT_LITERATURE_ROOT
+    )
+    results = []
+    for d in os.listdir(folder_root):
+        dir = os.path.join(folder_root, d) 
+        if os.path.isdir(dir):
+            pdfs = len(list(Path(dir).glob('*.pdf')))
+            if pdfs > 0:
+                results.append((d, pdfs))
+    return [d[0] for d in sorted(results, key=lambda t: t[1], reverse=True)]
+
         
-def _load_doc_file_info(dir):
+def _load_doc_file_info(collection):
+    folder_root = load_config_item(
+        "general",
+        "literature_root_dir",
+        DEFAULT_LITERATURE_ROOT
+    )
+    dir = os.path.join(folder_root, collection)
     dikt = []
     for pdf_path in Path(dir).glob('*.pdf'):
         dikt.append({
@@ -66,5 +95,7 @@ def load_one_pdf(pdf_path):
 
 
 if __name__ == "__main__":
-    #print(find_document_by_id("pdfs", "e99bdfc24b6e9bc8d28840a914768a73"))
-    print(load_literatures("pdfs"))
+    #print(find_document_by_id("ai", "e99bdfc24b6e9bc8d28840a914768a73"))
+    print(load_collections())
+    print(load_literatures("ai"))
+
