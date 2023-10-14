@@ -27,5 +27,3 @@ class LLMException(Exception):
     def __str__(self):
         """Represnt this object as a string."""
         return f"LLMException#{self.code} due to: {self.message}"
-
-

@@ -7,11 +7,15 @@ from .literature import LibraryTypeHandler
 from .literature import ZoteroLibraryHandler
 from .literature import FolderLibraryHandler
 from .summary import SummeryHandler
+from .summary import SplitHandler
+from .summary import RefineHandler
 
 def setup_handlers(web_app):
     routing = {
         'literature': LiteratureHandler,
         'literature/summary': SummeryHandler,
+        'literature/split': SplitHandler,
+        'literature/refine': RefineHandler,
         'libtype': LibraryTypeHandler,
         'libtype/zotero': ZoteroLibraryHandler,
         'libtype/folder': FolderLibraryHandler,
