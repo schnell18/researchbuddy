@@ -3,6 +3,8 @@ import { Tab } from 'semantic-ui-react'
 import { showErrorMessage } from '@jupyterlab/apputils'
 import { SelectChangeEvent } from '@mui/material/Select';
 import { GridRowParams } from '@mui/x-data-grid';
+import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
 
 import {
   OutputComponent,
@@ -25,7 +27,7 @@ export const SummaryComponent = (): JSX.Element => {
   const [collections, setCollections] = useState<any[]>([])
 
   const panes: any[] = [
-    { menuItem: 'Result', render: () => <Tab.Pane><TextoutputComponent lines={plaintextOutput} columns={120} rows={20} placeholder={""}/></Tab.Pane> },
+    { menuItem: 'Result', render: () => <Tab.Pane><TextoutputComponent lines={plaintextOutput} columns={120} rows={15} placeholder={""}/></Tab.Pane> },
     //{ menuItem: 'LaTeX', render: () => <Tab.Pane><LatexoutputComponent lines={latexOutput}/></Tab.Pane> },
   ]
 
@@ -152,16 +154,12 @@ export const SummaryComponent = (): JSX.Element => {
     setSummarizeBtnEnabled(docList.some((d) => d.selected === true));
   };
 
-    // <div className="App">
   return (
     <div>
       <DocListComponent
         docList={docList}
         pageSize={6}
         tableHeight={300}
-        actionPerformedBtnEnabled={summarizeBtnEnabled && !loading}
-        actionPerformedButtonText={'Summarize'}
-        onActionPerformed={onSummarize}
         onDocChanged={onDocSelChanged}
         libType={libType}
         libTypes={libTypes}
@@ -170,8 +168,44 @@ export const SummaryComponent = (): JSX.Element => {
         collections={collections}
         onCollectionChanged={onCollectionChanged}
       />
+      <ButtonPanelComponent 
+        actionPerformedBtnEnabled={summarizeBtnEnabled && !loading}
+        actionPerformedButtonText={'Summarize'}
+        onActionPerformed={onSummarize}
+      />
       <LoadingIndicator loading={loading} />
       <OutputComponent panes={panes}/>
     </div>
+  );
+}
+
+const ButtonPanelComponent = (
+  {
+    actionPerformedBtnEnabled,
+    onActionPerformed,
+    actionPerformedButtonText,
+  }:
+  {
+    actionPerformedBtnEnabled: boolean,
+    onActionPerformed: any,
+    actionPerformedButtonText: string,
+  }
+): JSX.Element => {
+
+  return (
+    <Stack
+        direction="row"
+        justifyContent="flex-end"
+        alignItems="flex-end"
+        spacing={2}
+      >
+      <Button
+          variant="contained"
+          disabled={!actionPerformedBtnEnabled}
+          onClick={onActionPerformed}
+      >
+          {actionPerformedButtonText}
+      </Button>
+    </Stack>
   );
 }

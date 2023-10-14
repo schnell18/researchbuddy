@@ -5,7 +5,6 @@ import { SelectChangeEvent } from '@mui/material/Select';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Unstable_Grid2';
 import Box from '@mui/material/Box';
-// import Stack from '@mui/material/Stack';
 
 import { requestAPI } from '../handler';
 import {
@@ -25,7 +24,6 @@ export const RefineComponent = (): JSX.Element => {
   // const [latexOutput, setLatexOutput] = useState<string>('');
   const [plaintextOutput, setPlaintextOutput] = useState<string>('');
   const [revisions, setRevisions] = useState<Revision[]>([]);
-  const [loadBtnEnabled, setSummarizeBtnEnabled] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(false)
   const [libType, setLibType] = useState<string>('')
   const [libTypes, setLibTypes] = useState<any[]>([])
@@ -97,36 +95,6 @@ export const RefineComponent = (): JSX.Element => {
       });
   }
 
-  const onSplitDocument = () => {
-    setLoading(true);
-    const doc = docList.filter(doc => doc.selected)[0];
-    const req = {
-      libType: libType,
-      collection: collection,
-      docId: doc.id,
-    }
-    requestAPI<any>('literature/split', {
-      method: 'POST',
-      body: JSON.stringify(req)
-    }).then(data => {
-        setLoading(false);
-        if (data.code == 0) {
-          //setLatexOutput(data.latex.join(""))
-          setPlaintextOutput(data.text)
-        }
-        else {
-          showErrorMessage("Failure", data.errMsg)
-        }
-      })
-      .catch(reason => {
-        console.error(
-          `Serverside error failure: ${reason}`
-        );
-        setLoading(false);
-        showErrorMessage("Failure", reason)
-      });
-  };
-
   function loadCollections(libType: string) {
     if (libType === 'zotero') {
       requestAPI<any>('libtype/zotero')
@@ -186,6 +154,8 @@ export const RefineComponent = (): JSX.Element => {
   }
 
   const onDocSelChanged = (params: GridRowParams, event: any, details: any) => {
+
+    const doc = docList.filter(doc => !doc.selected && params.id === doc.id)[0];
     setDocList(
       docList.map((doc, j) => {
         if (params.id === doc.id) {
@@ -194,7 +164,37 @@ export const RefineComponent = (): JSX.Element => {
         return doc;
       })
     )
-    setSummarizeBtnEnabled(docList.some((d) => d.selected === true));
+    if (!doc) {
+      // no document selected
+      return;
+    }
+
+    const req = {
+      libType: libType,
+      collection: collection,
+      docId: doc.id,
+    }
+    setLoading(true);
+    requestAPI<any>('literature/split', {
+      method: 'POST',
+      body: JSON.stringify(req)
+    }).then(data => {
+        setLoading(false);
+        if (data.code == 0) {
+          //setLatexOutput(data.latex.join(""))
+          setPlaintextOutput(data.text)
+        }
+        else {
+          showErrorMessage("Failure", data.errMsg)
+        }
+      })
+      .catch(reason => {
+        console.error(
+          `Serverside error failure: ${reason}`
+        );
+        setLoading(false);
+        showErrorMessage("Failure", reason)
+      });
   };
 
   return (
@@ -203,9 +203,6 @@ export const RefineComponent = (): JSX.Element => {
         docList={docList}
         pageSize={5}
         tableHeight={270}
-        actionPerformedBtnEnabled={loadBtnEnabled && !loading}
-        onActionPerformed={onSplitDocument}
-        actionPerformedButtonText={'Load'}
         onDocChanged={onDocSelChanged}
         libType={libType}
         libTypes={libTypes}
@@ -223,7 +220,7 @@ export const RefineComponent = (): JSX.Element => {
           justifyContent="space-between"
           alignItems="stretch"
           spacing={2}>
-          <Grid xs={5}>
+          <Grid xs={4}>
            <RefineInputComponent
              textareaRef={textareaRef}
              lines={plaintextOutput}
@@ -237,7 +234,7 @@ export const RefineComponent = (): JSX.Element => {
               <Button variant="contained" disabled={loading} onClick={onRefine}>Refine</Button>
             </div>
           </Grid>
-          <Grid xs={5}>
+          <Grid xs={6}>
             <RefineOutputComponent revs={revisions} />
           </Grid>
         </Grid>
@@ -247,8 +244,6 @@ export const RefineComponent = (): JSX.Element => {
   );
 }
 
-// onChange={(event:any) => { setPlaintextOutput(event.target.value) }}
-//
 const RefineInputComponent = (
   {
     textareaRef, lines, rows=20, columns=80, placeholder="empty..."

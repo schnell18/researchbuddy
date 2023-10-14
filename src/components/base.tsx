@@ -2,13 +2,13 @@ import React from "react";
 import { Tab } from 'semantic-ui-react'
 import 'semantic-ui-css/semantic.min.css'
 import { Hourglass } from 'react-loader-spinner'
-import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRowSelectionModel, GridCallbackDetails } from '@mui/x-data-grid';
+import Radio from "@mui/material/Radio";
 
 export const LoadingIndicator = ({ loading }: { loading: boolean }): JSX.Element => {
   if (loading) {
@@ -34,9 +34,6 @@ export const DocListComponent = (
     docList,
     pageSize,
     tableHeight,
-    actionPerformedBtnEnabled,
-    onActionPerformed,
-    actionPerformedButtonText,
     onDocChanged,
     libType,
     libTypes,
@@ -49,9 +46,6 @@ export const DocListComponent = (
     docList: any[],
     pageSize: number,
     tableHeight: number,
-    actionPerformedBtnEnabled: boolean,
-    onActionPerformed: any,
-    actionPerformedButtonText: string,
     onDocChanged: any,
     libType: any,
     libTypes: any[],
@@ -62,7 +56,17 @@ export const DocListComponent = (
   }
 ): JSX.Element => {
 
+  const [selectionModel, setSelectionModel] = React.useState<any[]>([]);
   const columns: GridColDef[] = [
+    {
+      field: "radiobutton",
+      headerName: "",
+      width: 100,
+      sortable: false,
+      renderCell: (params) => (
+        <Radio checked={selectionModel.length > 0 && selectionModel[0] === params.id} value={params.id} />
+      )
+    },
     {
       field: 'title',
       headerName: 'Title',
@@ -124,6 +128,11 @@ export const DocListComponent = (
           rows={docList}
           columns={columns}
           density={'compact'}
+          rowSelectionModel={selectionModel}
+          onRowSelectionModelChange={
+            (newSelectionModel: GridRowSelectionModel, details: GridCallbackDetails) => {
+            setSelectionModel(newSelectionModel);
+          }}
           onCellClick={onDocChanged}
           initialState={{
             pagination: {
@@ -132,29 +141,13 @@ export const DocListComponent = (
           }}
           sx={{fontSize: 14}}
           pageSizeOptions={[pageSize, pageSize * 2]}
-          checkboxSelection
         />
       </div>
-
-      <Stack
-        direction="row"
-        justifyContent="flex-end"
-        alignItems="flex-end"
-        spacing={2}
-      >
-      <Button
-          variant="contained"
-          disabled={!actionPerformedBtnEnabled}
-          onClick={onActionPerformed}
-      >
-          {actionPerformedButtonText}
-      </Button>
-      </Stack>
-        
     </div>
   );
 }
 
+          // checkboxSelection
 export const TextoutputComponent = (
   {
     lines, rows=25, columns=120, placeholder="empty..."
