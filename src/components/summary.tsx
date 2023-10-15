@@ -157,6 +157,8 @@ export const SummaryComponent = (): JSX.Element => {
   return (
     <div>
       <DocListComponent
+        id={'summary-doclist-wrapper'}
+        radioSelection={false}
         docList={docList}
         pageSize={6}
         tableHeight={300}

@@ -3,8 +3,17 @@ import { showErrorMessage } from '@jupyterlab/apputils'
 import { GridRowParams } from '@mui/x-data-grid';
 import { SelectChangeEvent } from '@mui/material/Select';
 import Button from '@mui/material/Button';
-import Grid from '@mui/material/Unstable_Grid2';
-import Box from '@mui/material/Box';
+// import Grid from '@mui/material/Unstable_Grid2';
+// import Box from '@mui/material/Box';
+
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Paper from '@mui/material/Paper';
+import { TextareaAutosize } from '@mui/base/TextareaAutosize';
 
 import { requestAPI } from '../handler';
 import {
@@ -19,11 +28,27 @@ interface Revision {
   reason?: string
 }
 
+interface ElementWidth {
+  id: string,
+  width: string,
+}
+
 export const RefineComponent = (): JSX.Element => {
+  const placeholders = [
+    {original: "", revised: "", reason: ""} as Revision,
+    {original: "", revised: "", reason: ""} as Revision,
+    {original: "", revised: "", reason: ""} as Revision,
+    {original: "", revised: "", reason: ""} as Revision,
+    {original: "", revised: "", reason: ""} as Revision,
+    {original: "", revised: "", reason: ""} as Revision,
+    {original: "", revised: "", reason: ""} as Revision,
+    {original: "", revised: "", reason: ""} as Revision,
+    {original: "", revised: "", reason: ""} as Revision,
+    {original: "", revised: "", reason: ""} as Revision,
+  ]
   const [docList, setDocList] = useState<any[]>([]);
-  // const [latexOutput, setLatexOutput] = useState<string>('');
   const [plaintextOutput, setPlaintextOutput] = useState<string>('');
-  const [revisions, setRevisions] = useState<Revision[]>([]);
+  const [revisions, setRevisions] = useState<Revision[]>(placeholders);
   const [loading, setLoading] = useState<boolean>(false)
   const [libType, setLibType] = useState<string>('')
   const [libTypes, setLibTypes] = useState<any[]>([])
@@ -181,7 +206,6 @@ export const RefineComponent = (): JSX.Element => {
     }).then(data => {
         setLoading(false);
         if (data.code == 0) {
-          //setLatexOutput(data.latex.join(""))
           setPlaintextOutput(data.text)
         }
         else {
@@ -200,6 +224,8 @@ export const RefineComponent = (): JSX.Element => {
   return (
     <div>
       <DocListComponent
+        id={'refine-doclist-wrapper'}
+        radioSelection={true}
         docList={docList}
         pageSize={5}
         tableHeight={270}
@@ -213,36 +239,27 @@ export const RefineComponent = (): JSX.Element => {
       />
 
       <LoadingIndicator loading={loading} />
-      <Box sx={{ flexGrow: 1 }}>
-        <Grid
-          container
-          direction="row"
-          justifyContent="space-between"
-          alignItems="stretch"
-          spacing={2}>
-          <Grid xs={4}>
+      <div className="refinePanelContainer">
+        <div style={{width: '36%'}} id="refine-input-wrapper">
            <RefineInputComponent
              textareaRef={textareaRef}
              lines={plaintextOutput}
              rows={20}
-             columns={55}
+             columns={70}
              placeholder={"Load literature into this pane or paste whatever text you want ..."}
            />
-          </Grid>
-          <Grid xs={1}>
-            <div className="refine-btn-wrapper" >
-              <Button variant="contained" disabled={loading} onClick={onRefine}>Refine</Button>
-            </div>
-          </Grid>
-          <Grid xs={6}>
-            <RefineOutputComponent revs={revisions} />
-          </Grid>
-        </Grid>
-      </Box>
-
+        </div>
+        <div style={{width: '8%'}} id="refine-btn-wrapper" >
+          <Button variant="contained" disabled={loading} onClick={onRefine}>Refine</Button>
+        </div>
+        <div style={{width: '56%'}} id="refine-output-wrapper" >
+          <RefineOutputComponent revs={revisions} />
+        </div>
+      </div>
     </div>
   );
 }
+
 
 const RefineInputComponent = (
   {
@@ -255,10 +272,14 @@ const RefineInputComponent = (
     columns: number,
     placeholder: string
   }): JSX.Element => {
+
+        //<textarea
     return (
-        <textarea
+        <TextareaAutosize
+          id="splitTextarea"
           ref={textareaRef}
-          rows={rows}
+          minRows={rows}
+          maxRows={rows}
           cols={columns}
           value={lines}
           placeholder={placeholder}/>
@@ -266,22 +287,72 @@ const RefineInputComponent = (
 }
 
 const RefineOutputComponent = ({revs}: {revs: Revision[]}): JSX.Element => {
-    return (
-      <table className="revision">
-        <tr>
-          <th>Original</th>
-          <th>Revised</th>
-          <th>Reason</th>
-      </tr>
-        {revs.map((rev, key) => {
-          return (
-            <tr key={key}>
-                <td className="text">{rev.original}</td>
-                <td className="text">{rev.revised}</td>
-                <td className="text">{rev.reason}</td>
-            </tr>
-          )
-        })}
-      </table>
-    );
+  
+  function toggle(maxElem: ElementWidth, elements: ElementWidth[]) {
+    let hide = true;
+    for (let index = 0; index < elements.length; index++) {
+      const id = elements[index].id;
+      const width = elements[index].width;
+      let elem = document.getElementById(id);
+      if (elem) {
+        if (elem.style.display !== 'none') {
+          elem.style.display = 'none';
+          elem.style.width = '0';
+        }
+        else {
+          elem.style.display = '';
+          if (width) {
+            elem.style.width = width;
+          }
+          hide = false;
+        }
+      }
+    }
+    let m = document.getElementById(maxElem.id);
+    if (m && hide) {
+      m.style.width = '100%';
+    }
+    else if (m) {
+      m.style.width = maxElem.width;
+    }
+  }
+
+  function onClick(event: React.MouseEvent<HTMLElement>) {
+    if (event.detail === 2) {
+      let elems = [
+        {id: 'refine-input-wrapper', width: '36%'} as ElementWidth,
+        {id: 'refine-btn-wrapper', width: '8%'} as ElementWidth,
+        {id: 'refine-doclist-wrapper', width: '100%'} as ElementWidth,
+      ];
+      let maxElem = {id: 'refine-output-wrapper', width: '56%'} as ElementWidth;
+      toggle(maxElem, elems);
+    }
+  }
+
+  return (
+    <TableContainer component={Paper} onClick={onClick}>
+      <Table sx={{ minWidth: 500 }} aria-label="AI revision table">
+        <TableHead>
+          <TableRow>
+            <TableCell>Original</TableCell>
+            <TableCell>Revised</TableCell>
+            <TableCell>Reason</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {revs.map((row) => (
+            <TableRow
+              sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+            >
+              <TableCell component="th" scope="row">
+                {row.original}
+              </TableCell>
+              <TableCell>{row.revised}</TableCell>
+              <TableCell>{row.reason}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
 }

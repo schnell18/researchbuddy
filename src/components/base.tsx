@@ -9,19 +9,23 @@ import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import { DataGrid, GridColDef, GridRowSelectionModel, GridCallbackDetails } from '@mui/x-data-grid';
 import Radio from "@mui/material/Radio";
+import Backdrop from '@mui/material/Backdrop';
 
 export const LoadingIndicator = ({ loading }: { loading: boolean }): JSX.Element => {
   if (loading) {
     return (
-      <div className="center">
-        <Hourglass
-          visible={loading}
-          height="80"
-          width="80"
-          ariaLabel="hourglass-loading"
-          colors={['#306cce', '#72a1ed']}
-        />
-      </div>
+        <Backdrop
+          sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+          open={loading}
+        >
+          <Hourglass
+            visible={loading}
+            height="80"
+            width="80"
+            ariaLabel="hourglass-loading"
+            colors={['#306cce', '#72a1ed']}
+          />
+        </Backdrop>
     )
   }
   return (
@@ -31,6 +35,8 @@ export const LoadingIndicator = ({ loading }: { loading: boolean }): JSX.Element
 
 export const DocListComponent = (
   {
+    id,
+    radioSelection,
     docList,
     pageSize,
     tableHeight,
@@ -43,6 +49,8 @@ export const DocListComponent = (
     onCollectionChanged
   }:
   {
+    id: string,
+    radioSelection: boolean,
     docList: any[],
     pageSize: number,
     tableHeight: number,
@@ -59,15 +67,6 @@ export const DocListComponent = (
   const [selectionModel, setSelectionModel] = React.useState<any[]>([]);
   const columns: GridColDef[] = [
     {
-      field: "radiobutton",
-      headerName: "",
-      width: 100,
-      sortable: false,
-      renderCell: (params) => (
-        <Radio checked={selectionModel.length > 0 && selectionModel[0] === params.id} value={params.id} />
-      )
-    },
-    {
       field: 'title',
       headerName: 'Title',
       description: 'Title of the literature',
@@ -78,8 +77,19 @@ export const DocListComponent = (
     { field: 'pages', headerName: 'Pages', type: 'number', flex: 10 },
   ];
 
+  if (radioSelection) {
+    columns.unshift({
+      field: "radiobutton",
+      headerName: "",
+      width: 100,
+      sortable: false,
+      renderCell: (params) => (
+        <Radio checked={selectionModel.length > 0 && selectionModel[0] === params.id} value={params.id} />
+      )
+    });
+  }
   return (
-    <div>
+    <div id={id}>
       <Stack
         direction="row"
         justifyContent="flex-end"
@@ -141,13 +151,13 @@ export const DocListComponent = (
           }}
           sx={{fontSize: 14}}
           pageSizeOptions={[pageSize, pageSize * 2]}
+          checkboxSelection={!radioSelection}
         />
       </div>
     </div>
   );
 }
 
-          // checkboxSelection
 export const TextoutputComponent = (
   {
     lines, rows=25, columns=120, placeholder="empty..."
