@@ -3,19 +3,21 @@ import random
 import time
 import tornado
 
+from jupyter_server.base.handlers import APIHandler
+from timeit import default_timer as timer
+
 from .document.directory import find_document_by_id as dir_find_document_by_id
 from .document.zotero import find_document_by_id as zo_find_document_by_id
 from .llm.datatypes import LLMException
 from .llm.engine import summarize
 from .llm.engine import split
 from .llm.engine import refine
-from jupyter_server.base.handlers import APIHandler
-
 
 class SummeryHandler(APIHandler):
 
     @tornado.web.authenticated
     def post(self):
+        t0 = timer()
         req = self.get_json_body()
         self.log.warning("Received Summary Request: %s", req)
         lib_type = req.get('libType', 'folder')
@@ -52,6 +54,9 @@ class SummeryHandler(APIHandler):
                 ],
             }
             self.finish(json.dumps(resp))
+
+            t1 = timer()
+            self.log.info("Summary took %d seconds" % (t1-t0,))
         except LLMException as llme:
             self.log.exception("LLM call failed due to: %s", llme)
             resp = {
@@ -113,6 +118,7 @@ class SplitHandler(APIHandler):
 class RefineHandler(APIHandler):
     @tornado.web.authenticated
     def post(self):
+        t0 = timer()
         req = self.get_json_body()
         self.log.warning("Received Refine Request: %s", req)
         lib_type = req.get('libType', 'folder')
@@ -142,6 +148,8 @@ class RefineHandler(APIHandler):
                 "revisions": revised,
             }
             self.finish(json.dumps(resp))
+            t1 = timer();
+            self.log.info("Refine took %d seconds" % (t1-t0,))
         except Exception as e:
             self.log.exception("LLM call failed due to: %s", e)
             resp = {

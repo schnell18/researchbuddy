@@ -178,6 +178,11 @@ export const RefineComponent = (): JSX.Element => {
       });
   }
 
+
+  const onRefineInputChanged = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setPlaintextOutput(event.target.value);
+  }
+
   const onDocSelChanged = (params: GridRowParams, event: any, details: any) => {
 
     const doc = docList.filter(doc => !doc.selected && params.id === doc.id)[0];
@@ -246,6 +251,7 @@ export const RefineComponent = (): JSX.Element => {
              lines={plaintextOutput}
              rows={20}
              columns={70}
+             onRefineInputChanged={onRefineInputChanged}
              placeholder={"Load literature into this pane or paste whatever text you want ..."}
            />
         </div>
@@ -263,13 +269,19 @@ export const RefineComponent = (): JSX.Element => {
 
 const RefineInputComponent = (
   {
-    textareaRef, lines, rows=20, columns=80, placeholder="empty..."
+    textareaRef,
+    lines,
+    rows,
+    columns,
+    onRefineInputChanged,
+    placeholder="empty..."
   }:
   {
     textareaRef: any,
     lines: string,
     rows: number,
     columns: number,
+    onRefineInputChanged: any,
     placeholder: string
   }): JSX.Element => {
 
@@ -282,6 +294,7 @@ const RefineInputComponent = (
           maxRows={rows}
           cols={columns}
           value={lines}
+          onChange={onRefineInputChanged}
           placeholder={placeholder}/>
     );
 }
